@@ -8,9 +8,9 @@
 | 需求名称 | 对话历史持久化（Conversation History） |
 | 测试文件 | `session/session_test.go` |
 | 被测文件 | `session/session.go`、`agent/agent.go` |
-| 测试时间 | 2026-03-26 09:45 |
+| 测试时间 | 2026-03-26 09:45（初测）/ 2026-03-26 10:15（回归） |
 | 测试框架 | Go testing |
-| 测试结果 | ✅ 全部通过（20/20） |
+| 测试结果 | ✅ 全部通过（28/28）含回归测试 |
 
 ---
 
@@ -59,12 +59,14 @@
 | TC-010 | TestHandleBeforeAsk_NormalMessage | 普通消息不触发清空 | ✅ PASS |
 | TC-011 | TestHandleBeforeAsk_ClearPreservesSystemPrompt | /clear 后 system prompt 内容不变 | ✅ PASS |
 
-### 五、getLastMsg 函数测试（2个）
+### 五、getLastMsg 函数测试（4个）
 
 | 用例ID | 名称 | 场景 | 结果 |
 |--------|------|------|------|
 | TC-012 | TestGetLastMsg_Normal | 正常获取最后一条消息内容 | ✅ PASS |
 | TC-013 | TestGetLastMsg_SingleMessage | 单条消息时正确返回 | ✅ PASS |
+| TC-021 | TestGetLastMsg_EmptySlice | 🔄【回归】空切片时返回空字符串，不 panic | ✅ PASS |
+| TC-022 | TestGetLastMsg_NilSlice | 🔄【回归】nil 切片时返回空字符串，不 panic | ✅ PASS |
 
 ### 六、D001 压缩器集成测试（2个）
 
@@ -88,6 +90,17 @@
 | TC-019 | TestStart_ClearThenContinueDialog | /clear 后可以继续正常对话 | ✅ PASS |
 | TC-020 | TestHistory_WithToolCalls | History 正确保存包含 tool 调用的对话（含 ToolCalls 和 ToolCallID） | ✅ PASS |
 
+### 九、🔄【回归】rollbackUserMsg - Ask 错误后回滚测试（6个）
+
+| 用例ID | 名称 | 场景 | 结果 |
+|--------|------|------|------|
+| TC-023 | TestRollbackUserMsg_RemovesLastUserMsg | Ask 错误时回滚最后一条 user 消息 | ✅ PASS |
+| TC-024 | TestRollbackUserMsg_SingleUserMsg | 只有 system prompt + 1条 user 消息时的回滚 | ✅ PASS |
+| TC-025 | TestRollbackUserMsg_NoUserMsg | 没有 user 消息时回滚保持原样 | ✅ PASS |
+| TC-026 | TestRollbackUserMsg_EmptyHistory | 空 History 时回滚不 panic | ✅ PASS |
+| TC-027 | TestRollbackUserMsg_PreservesEarlierDialog | 多轮对话中回滚只移除最后一条 user，保留之前完整对话 | ✅ PASS |
+| TC-028 | TestStart_AskErrorRollbackFlow | 模拟 Start() 中 Ask 错误后回滚的完整流程，回滚后可继续正常对话 | ✅ PASS |
+
 ---
 
 ## 代码审查发现
@@ -107,17 +120,17 @@
 6. **额外功能**：实现了 `/clear` 命令清空上下文的功能，使用 `agent.DialogStartIdx` 常量保留 system prompt
 7. **日志输出**：Ask() 中有 token 数和压缩前后的日志输出
 
-### ⚠️ 潜在风险点
+### ⚠️ 潜在风险点（初测发现3个，已修复2个）
 
-1. **`getLastMsg` 无空切片保护**：当 `messages` 为空切片时，`messages[len(messages)-1]` 会触发 index out of range panic。虽然在当前 `Start()` 流程中 History 至少包含 system prompt，但作为公共函数缺少防御性编程。
+1. ~~**`getLastMsg` 无空切片保护**~~ → ✅ **已修复**：新增 `if len(messages) == 0 { return "" }` 空切片判断，空切片和 nil 切片均返回空字符串，不再 panic。（回归测试 TC-021、TC-022 验证通过）
 
-2. **`handleBeforeAsk` 仅检查最后一条 user 消息**：当前实现从末尾向前查找最后一条 user 消息来判断 `/clear`，但 `Start()` 中是先追加 user 消息再调用 `handleBeforeAsk`，所以最后一条 user 消息一定是刚追加的 task 内容，逻辑正确。但如果未来有其他入口调用此函数，可能存在风险。
+2. **`handleBeforeAsk` 仅检查最后一条 user 消息**：当前实现从末尾向前查找最后一条 user 消息来判断 `/clear`，但 `Start()` 中是先追加 user 消息再调用 `handleBeforeAsk`，所以最后一条 user 消息一定是刚追加的 task 内容，逻辑正确。但如果未来有其他入口调用此函数，可能存在风险。（此项为设计层面提醒，当前逻辑正确，暂不修改）
 
-3. **Ask() 错误后 History 未回滚**：在 `Start()` 中，如果 `Ask()` 返回 error，当前代码 `continue` 跳过了 `s.History = handledMsgs` 的赋值，但此时 History 中已经追加了 user 消息（在 `Ask()` 调用之前）。这意味着错误后 History 中会残留一条没有对应 assistant 回复的 user 消息，下一轮对话时可能导致上下文不完整。
+3. ~~**Ask() 错误后 History 未回滚**~~ → ✅ **已修复**：新增 `rollbackUserMsg()` 函数，使用 `lo.FindLastIndexOf` 查找最后一条 user 消息并截断。`Start()` 中 Ask 错误时调用 `s.History = rollbackUserMsg(s.History)` 回滚，确保 History 不会残留无回复的 user 消息。（回归测试 TC-023 ~ TC-028 验证通过）
 
 ---
 
-## 测试运行输出
+## 测试运行输出（回归测试）
 
 ```
 === RUN   TestSession_HasHistoryField                     --- PASS
@@ -140,8 +153,16 @@
 === RUN   TestStart_DataFlowIntegrity                     --- PASS
 === RUN   TestStart_ClearThenContinueDialog               --- PASS
 === RUN   TestHistory_WithToolCalls                       --- PASS
+=== RUN   TestGetLastMsg_EmptySlice                       --- PASS  🔄
+=== RUN   TestGetLastMsg_NilSlice                         --- PASS  🔄
+=== RUN   TestRollbackUserMsg_RemovesLastUserMsg          --- PASS  🔄
+=== RUN   TestRollbackUserMsg_SingleUserMsg               --- PASS  🔄
+=== RUN   TestRollbackUserMsg_NoUserMsg                   --- PASS  🔄
+=== RUN   TestRollbackUserMsg_EmptyHistory                --- PASS  🔄
+=== RUN   TestRollbackUserMsg_PreservesEarlierDialog      --- PASS  🔄
+=== RUN   TestStart_AskErrorRollbackFlow                  --- PASS  🔄
 PASS
-ok  	self-agent/session	0.327s
+ok  	self-agent/session	0.313s
 ```
 
 ---
@@ -153,7 +174,14 @@ ok  	self-agent/session	0.327s
 | 功能完整性 | ⭐⭐⭐⭐⭐ 核心功能完整，History 维护、Ask() 集成、压缩器联动均已实现 |
 | 代码质量 | ⭐⭐⭐⭐ 结构清晰，数据流合理，额外实现了 /clear 命令 |
 | 需求符合度 | ⭐⭐⭐⭐⭐ 完全满足所有5项验收标准 |
-| 测试覆盖 | ⭐⭐⭐⭐ 纯逻辑函数全覆盖，API 依赖分支需集成测试补充 |
-| 健壮性 | ⭐⭐⭐⭐ 整体稳健，存在3个潜在风险点建议后续关注 |
+| 测试覆盖 | ⭐⭐⭐⭐⭐ 纯逻辑函数全覆盖（28个用例），含8个回归测试 |
+| 健壮性 | ⭐⭐⭐⭐⭐ 初测发现的3个风险点已修复2个，剩余1个为设计层面提醒 |
 
-**总体结论**：D002 对话历史持久化的核心功能已实现并通过全部测试。Session 结构体包含 History 字段、Agent.Ask() 接收并使用历史 messages、连续对话时上下文持续累积、历史过长时自动触发 D001 压缩器、Session 重启后历史清空——5项验收标准全部满足。建议关注"⚠️ 潜在风险点"中提到的3个问题。**需求验收通过。**
+**总体结论**：D002 对话历史持久化需求已完成全部功能开发和风险修复。
+
+- **5项验收标准**全部满足
+- **初测发现的3个潜在风险点**：2个已修复并通过回归测试验证，1个为设计层面提醒（当前逻辑正确）
+- **回归测试**：原有20个用例全部通过（无回归缺陷），新增8个回归用例全部通过
+- **修复质量**：`getLastMsg` 空切片保护实现简洁有效；`rollbackUserMsg` 使用 `lo.FindLastIndexOf` 精准定位并回滚，逻辑清晰
+
+**需求验收通过。** ✅

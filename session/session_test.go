@@ -578,3 +578,194 @@ func TestHistory_WithToolCalls(t *testing.T) {
 		t.Errorf("assistant 消息应有1个 ToolCall，实际为 %d", len(s.History[2].ToolCalls))
 	}
 }
+
+// ============================================================
+// 【风险修复回归】getLastMsg 空切片保护
+// ============================================================
+
+// TC-021: getLastMsg 传入空切片时应返回空字符串，不应 panic
+func TestGetLastMsg_EmptySlice(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("getLastMsg 传入空切片时发生 panic: %v", r)
+		}
+	}()
+
+	messages := []model.AgentMessage{}
+	result := getLastMsg(messages)
+	if result != "" {
+		t.Errorf("空切片应返回空字符串，实际返回: %s", result)
+	}
+}
+
+// TC-022: getLastMsg 传入 nil 切片时应返回空字符串，不应 panic
+func TestGetLastMsg_NilSlice(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("getLastMsg 传入 nil 切片时发生 panic: %v", r)
+		}
+	}()
+
+	var messages []model.AgentMessage
+	result := getLastMsg(messages)
+	if result != "" {
+		t.Errorf("nil 切片应返回空字符串，实际返回: %s", result)
+	}
+}
+
+// ============================================================
+// 【风险修复回归】rollbackUserMsg - Ask 错误后回滚 user 消息
+// ============================================================
+
+// TC-023: Ask 错误时应回滚最后一条 user 消息
+func TestRollbackUserMsg_RemovesLastUserMsg(t *testing.T) {
+	history := []model.AgentMessage{
+		msg("system", "你是一个AI助手"),
+		msg("user", "你好"),
+		msg("assistant", "你好！"),
+		msg("user", "这条消息应该被回滚"),
+	}
+
+	result := rollbackUserMsg(history)
+
+	// 回滚后应移除最后一条 user 消息
+	if len(result) != 3 {
+		t.Fatalf("回滚后 History 长度应为3，实际为 %d", len(result))
+	}
+	// 最后一条应该是 assistant 的回复
+	if result[len(result)-1].Role != "assistant" {
+		t.Errorf("回滚后最后一条消息应为 assistant，实际为 %s", result[len(result)-1].Role)
+	}
+	if result[len(result)-1].Content != "你好！" {
+		t.Errorf("回滚后最后一条消息内容不匹配，实际为: %s", result[len(result)-1].Content)
+	}
+}
+
+// TC-024: 只有 system prompt 和一条 user 消息时的回滚
+func TestRollbackUserMsg_SingleUserMsg(t *testing.T) {
+	history := []model.AgentMessage{
+		msg("system", "你是一个AI助手"),
+		msg("user", "唯一的用户消息"),
+	}
+
+	result := rollbackUserMsg(history)
+
+	// 回滚后应只剩 system prompt
+	if len(result) != 1 {
+		t.Fatalf("回滚后 History 长度应为1，实际为 %d", len(result))
+	}
+	if result[0].Role != "system" {
+		t.Errorf("回滚后应只剩 system prompt，实际为 %s", result[0].Role)
+	}
+}
+
+// TC-025: 没有 user 消息时回滚应保持原样
+func TestRollbackUserMsg_NoUserMsg(t *testing.T) {
+	history := []model.AgentMessage{
+		msg("system", "你是一个AI助手"),
+	}
+
+	result := rollbackUserMsg(history)
+
+	// 没有 user 消息，应保持原样
+	if len(result) != 1 {
+		t.Fatalf("无 user 消息时回滚后长度应为1，实际为 %d", len(result))
+	}
+	if result[0].Role != "system" {
+		t.Errorf("应保持 system prompt 不变，实际为 %s", result[0].Role)
+	}
+}
+
+// TC-026: 空 History 时回滚不应 panic
+func TestRollbackUserMsg_EmptyHistory(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("rollbackUserMsg 传入空 History 时发生 panic: %v", r)
+		}
+	}()
+
+	history := []model.AgentMessage{}
+	result := rollbackUserMsg(history)
+
+	if len(result) != 0 {
+		t.Errorf("空 History 回滚后长度应为0，实际为 %d", len(result))
+	}
+}
+
+// TC-027: 多轮对话中回滚只移除最后一条 user 消息，保留之前的完整对话
+func TestRollbackUserMsg_PreservesEarlierDialog(t *testing.T) {
+	history := []model.AgentMessage{
+		msg("system", "你是一个AI助手"),
+		msg("user", "第一轮问题"),
+		msg("assistant", "第一轮回答"),
+		msg("user", "第二轮问题"),
+		msg("assistant", "第二轮回答"),
+		msg("user", "第三轮问题（Ask失败，需要回滚）"),
+	}
+
+	result := rollbackUserMsg(history)
+
+	// 应保留前两轮完整对话
+	if len(result) != 5 {
+		t.Fatalf("回滚后 History 长度应为5，实际为 %d", len(result))
+	}
+
+	expectedRoles := []string{"system", "user", "assistant", "user", "assistant"}
+	for i, expected := range expectedRoles {
+		if result[i].Role != expected {
+			t.Errorf("result[%d].Role 应为 %s，实际为 %s", i, expected, result[i].Role)
+		}
+	}
+
+	// 验证第二轮对话内容完整
+	if result[3].Content != "第二轮问题" {
+		t.Errorf("第二轮问题内容不匹配，实际为: %s", result[3].Content)
+	}
+	if result[4].Content != "第二轮回答" {
+		t.Errorf("第二轮回答内容不匹配，实际为: %s", result[4].Content)
+	}
+}
+
+// TC-028: 模拟 Start() 中 Ask 错误后回滚的完整流程
+func TestStart_AskErrorRollbackFlow(t *testing.T) {
+	s := &Session{
+		History: []model.AgentMessage{
+			msg("system", "你是一个AI助手"),
+			msg("user", "第一轮问题"),
+			msg("assistant", "第一轮回答"),
+		},
+	}
+
+	// 模拟第二轮：追加 user 消息
+	s.History = append(s.History, msg("user", "第二轮问题（将失败）"))
+
+	// 模拟 Ask() 返回错误，执行回滚逻辑
+	// 对应 session.go 中: s.History = rollbackUserMsg(s.History)
+	s.History = rollbackUserMsg(s.History)
+
+	// 回滚后应恢复到第一轮对话结束的状态
+	if len(s.History) != 3 {
+		t.Fatalf("Ask 错误回滚后 History 长度应为3，实际为 %d", len(s.History))
+	}
+
+	expectedRoles := []string{"system", "user", "assistant"}
+	for i, expected := range expectedRoles {
+		if s.History[i].Role != expected {
+			t.Errorf("History[%d].Role 应为 %s，实际为 %s", i, expected, s.History[i].Role)
+		}
+	}
+
+	// 模拟回滚后继续正常对话
+	s.History = append(s.History, msg("user", "重试的问题"))
+	s.History = append(s.History, msg("assistant", "重试成功的回答"))
+
+	if len(s.History) != 5 {
+		t.Errorf("回滚后继续对话，History 长度应为5，实际为 %d", len(s.History))
+	}
+	if s.History[3].Content != "重试的问题" {
+		t.Errorf("重试的问题内容不匹配")
+	}
+	if s.History[4].Content != "重试成功的回答" {
+		t.Errorf("重试的回答内容不匹配")
+	}
+}

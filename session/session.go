@@ -8,6 +8,8 @@ import (
 	"self-agent/channel"
 	"self-agent/config"
 	"self-agent/model"
+
+	"github.com/samber/lo"
 )
 
 // Session 会话
@@ -86,6 +88,8 @@ func (s *Session) Start() {
 		}
 		handledMsgs, err := s.Agent.Ask(s.History)
 		if err != nil {
+			// 当Ask错误时，清空最近一次的User消息
+			s.History = rollbackUserMsg(s.History)
 			fmt.Println("Error:", err)
 			continue
 		}
@@ -100,6 +104,17 @@ func (s *Session) Start() {
 		}
 		fmt.Printf("Agent response: %s\n", latestMsg)
 	}
+}
+
+func rollbackUserMsg(history []model.AgentMessage) []model.AgentMessage {
+	// 找到最后一条用户消息
+	_, idx, find := lo.FindLastIndexOf(history, func(msg model.AgentMessage) bool {
+		return msg.Role == "user"
+	})
+	if find {
+		return history[:idx]
+	}
+	return history
 }
 
 func handleBeforeAsk(history []model.AgentMessage) ([]model.AgentMessage, bool) {
@@ -120,6 +135,9 @@ func handleBeforeAsk(history []model.AgentMessage) ([]model.AgentMessage, bool) 
 }
 
 func getLastMsg(messages []model.AgentMessage) string {
+	if len(messages) == 0 {
+		return ""
+	}
 	return messages[len(messages)-1].Content
 }
 
