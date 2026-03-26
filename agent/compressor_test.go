@@ -389,8 +389,8 @@ func TestFindCompressEndIds_ManyDialogs(t *testing.T) {
 
 // TC-015: 验证 dialogStartIdx 常量
 func TestDialogStartIdx(t *testing.T) {
-	if dialogStartIdx != 1 {
-		t.Errorf("dialogStartIdx 应为1（第0条为system prompt），实际为 %d", dialogStartIdx)
+	if DialogStartIdx != 1 {
+		t.Errorf("dialogStartIdx 应为1（第0条为system prompt），实际为 %d", DialogStartIdx)
 	}
 }
 
