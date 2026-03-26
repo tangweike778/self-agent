@@ -1,0 +1,25 @@
+# Self-Agent 配置文件
+# 配置Deepseek API和服务器设置
+
+# Deepseek API配置
+deepseek:
+  api_key: "sk-f47d4373f8014902808538bdbe8bd5b9"  # 替换为您的Deepseek API密钥
+  max_tokens: 120000  # 最大token数
+
+# 服务器配置
+server:
+  port: 19100  # 服务端口，默认19100
+  max_tokens: 1000 # 最大token数
+
+# 日志配置
+logging:
+  level: "info"  # 日志级别: debug, info, warn, error
+  format: "json"  # 日志格式: text, json
+
+# 飞书机器人配置（可选）
+channel:
+  feishu:
+    default_webhook: "https://open.feishu.cn/open-apis/bot/v2/hook/7828d10a-cdce-4658-9912-27f3b13868c4"  # 默认飞书机器人webhook地址
+    default_secret: "yyYRAQX6TeoOFLhEextWxhmPUke4LHOb"    # 默认飞书机器人secret
+    app_id: "cli_a934eeeca8381cb3"
+    open_id: "ou_4a514756ea14290df7ee1066b7c5ea39"
