@@ -99,9 +99,55 @@
                   <list />
                 </option>
               </Turn>
+              <Turn>
+                <option name="agent" value="" />
+                <option name="aguiRpcList">
+                  <list>
+                    <option value="{&quot;type&quot;:&quot;RUN_STARTED&quot;,&quot;timestamp&quot;:1774490635,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;},&quot;threadId&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;runId&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;TOOL_CALL_START&quot;,&quot;timestamp&quot;:1774490635,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;tool_call_id&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;,&quot;name&quot;:&quot;task_planning&quot;,&quot;ch_name&quot;:&quot;任务规划&quot;,&quot;display_name&quot;:&quot;任务规划中&quot;,&quot;render_type&quot;:&quot;None&quot;,&quot;default_show&quot;:false,&quot;need_result&quot;:false,&quot;loading_display_type&quot;:&quot;point&quot;},&quot;toolCallId&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;,&quot;toolCallName&quot;:&quot;task_planning&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;TOOL_CALL_END&quot;,&quot;timestamp&quot;:1774490637,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;tool_call_id&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;},&quot;toolCallId&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;TOOL_CALL_RESULT&quot;,&quot;timestamp&quot;:1774490637,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;tool_call_id&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;,&quot;display_name&quot;:&quot;任务规划&quot;},&quot;messageId&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;toolCallId&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;,&quot;content&quot;:&quot;&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;CUSTOM&quot;,&quot;timestamp&quot;:1774490637,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;type&quot;:&quot;remove-tool&quot;,&quot;tool_call_id&quot;:&quot;2fc955dc-e2c0-4512-b3d7-94f32f14cb36&quot;},&quot;name&quot;:&quot;remove-tool&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;STEP_STARTED&quot;,&quot;timestamp&quot;:1774490637,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;step_name&quot;:&quot;call_llm&quot;},&quot;stepName&quot;:&quot;call_llm&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;TEXT_MESSAGE_START&quot;,&quot;timestamp&quot;:1774490640,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;},&quot;messageId&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;role&quot;:&quot;assistant&quot;}" />
+                    <option value="{&quot;messageId&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;content&quot;:&quot;在 Git 中让本地文件不被追踪，有以下几种方式：\n\n---\n\n### 1. `.gitignore`（最常用）\n\n在项目根目录的 `.gitignore` 文件中添加要忽略的文件路径：\n\n```\n# 忽略单个文件\nconfig/config.yaml\n\n# 忽略某类文件\n*.log\n*.tmp\n\n# 忽略整个目录\nbuild/\n```\n\n&gt; ⚠️ **注意**：`.gitignore` 只对**尚未被 Git 追踪**的文件有效。如果文件已经被 commit 过，需要先取消追踪：\n&gt; ```bash\n&gt; git rm --cached config/config.yaml\n&gt; ```\n&gt; 然后再添加到 `.gitignore`。\n\n---\n\n### 2. `.git/info/exclude`（仅本地生效，不会提交到仓库）\n\n如果你不想修改 `.gitignore`（因为 `.gitignore` 会被提交到仓库，影响其他人），可以编辑：\n\n```\n.git/info/exclude\n```\n\n语法和 `.gitignore` 完全一样，但**只在你本地生效**，不会被推送到远程仓库。\n\n---\n\n### 3. `git update-index --assume-unchanged`（忽略已追踪文件的本地修改）\n\n如果文件**已经被 Git 追踪**，但你想让 Git **忽略你本地的修改**（比如本地配置文件）：\n\n```bash\n# 让 Git 假装这个文件没有变化\ngit update-index --assume-unchanged config/config.yaml\n\n# 恢复追踪\ngit update-index --no-assume-unchanged config/config.yaml\n```\n\n---\n\n### 4. `git update-index --skip-worktree`（推荐用于本地配置文件）\n\n和 `--assume-unchanged` 类似，但语义更明确，专门用于\&quot;我就是要在本地改这个文件，但不想提交\&quot;：\n\n```bash\n# 跳过工作区检查\ngit update-index --skip-worktree config/config.yaml\n\n# 恢复\ngit update-index --no-skip-worktree config/config.yaml\n```\n\n---\n\n### 对比总结\n\n| 方式 | 适用场景 | 影响范围 | 对已追踪文件有效 |\n|------|---------|---------|----------------|\n| `.gitignore` | 通用忽略规则 | 所有协作者 | ❌（需先 `git rm --cached`） |\n| `.git/info/exclude` | 仅自己忽略，不影响他人 | 仅本地 | ❌ |\n| `--assume-unchanged` | 临时忽略本地修改 | 仅本地 | ✅ |\n| `--skip-worktree` | 长期忽略本地配置修改 | 仅本地 | ✅ |\n\n---\n\n### 我的建议\n\n看你打开了 `config/config.yaml`，如果是想让本地的配置文件修改不被 Git 感知：\n\n- **文件还没提交过** → 加到 `.gitignore`\n- **文件已经提交过，但本地要改** → 用 `git update-index --skip-worktree config/config.yaml`&quot;},&quot;timestamp&quot;:1774490640,&quot;type&quot;:&quot;TEXT_MESSAGE_CONTENT&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;TEXT_MESSAGE_END&quot;,&quot;timestamp&quot;:1774490655,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;},&quot;messageId&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;STEP_FINISHED&quot;,&quot;timestamp&quot;:1774490655,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;step_name&quot;:&quot;call_llm&quot;,&quot;token_usage&quot;:{&quot;completion_tokens&quot;:922,&quot;prompt_tokens&quot;:19237,&quot;total_tokens&quot;:20159,&quot;completion_tokens_details&quot;:{&quot;accepted_prediction_tokens&quot;:null,&quot;audio_tokens&quot;:null,&quot;reasoning_tokens&quot;:0,&quot;rejected_prediction_tokens&quot;:null},&quot;prompt_tokens_details&quot;:{&quot;audio_tokens&quot;:null,&quot;cached_tokens&quot;:13181,&quot;cache_write_tokens&quot;:6054},&quot;cache_creation_input_tokens&quot;:0,&quot;cache_read_input_tokens&quot;:0}},&quot;stepName&quot;:&quot;call_llm&quot;}" />
+                    <option value="{&quot;type&quot;:&quot;RUN_FINISHED&quot;,&quot;timestamp&quot;:1774490655,&quot;rawEvent&quot;:{&quot;message_id&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;,&quot;conversation_id&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;},&quot;threadId&quot;:&quot;019d27aa91ea72a7b9f1f266d8584078&quot;,&quot;runId&quot;:&quot;019d27e24c0a7e6ebd522f8c04a5ff65&quot;}" />
+                  </list>
+                </option>
+                <option name="answer" value="" />
+                <option name="chatMode" value="AGENT" />
+                <option name="chatResource" value="user" />
+                <option name="codeReferences">
+                  <list />
+                </option>
+                <option name="command" value="normal" />
+                <option name="conversationId" value="019d27aa91ea72a7b9f1f266d8584078" />
+                <option name="historyDocumentMap">
+                  <map>
+                    <entry key="file://$PROJECT_DIR$/config/config.yaml" value="# Self-Agent 配置文件&#10;# 配置Deepseek API和服务器设置&#10;&#10;# Deepseek API配置&#10;deepseek:&#10;  api_key: &quot;sk-f47d4373f8014902808538bdbe8bd5b9&quot;  # 替换为您的Deepseek API密钥&#10;  max_tokens: 120000  # 最大token数&#10;&#10;# 服务器配置&#10;server:&#10;  port: 19100  # 服务端口，默认19100&#10;  max_tokens: 1000 # 最大token数&#10;&#10;# 日志配置&#10;logging:&#10;  level: &quot;info&quot;  # 日志级别: debug, info, warn, error&#10;  format: &quot;json&quot;  # 日志格式: text, json&#10;&#10;# 飞书机器人配置（可选）&#10;channel:&#10;  feishu:&#10;    default_webhook: &quot;https://open.feishu.cn/open-apis/bot/v2/hook/7828d10a-cdce-4658-9912-27f3b13868c4&quot;  # 默认飞书机器人webhook地址&#10;    default_secret: &quot;yyYRAQX6TeoOFLhEextWxhmPUke4LHOb&quot;    # 默认飞书机器人secret&#10;    app_id: &quot;cli_a934eeeca8381cb3&quot;&#10;    open_id: &quot;ou_4a514756ea14290df7ee1066b7c5ea39&quot;" />
+                  </map>
+                </option>
+                <option name="inputToken" value="19237" />
+                <option name="messageId" value="019d27e24c0a7e6ebd522f8c04a5ff65" />
+                <option name="model" value="claude-4.6-opus" />
+                <option name="outputToken" value="922" />
+                <option name="protocol" value="ag-ui" />
+                <option name="question" value="如何让trg不感知某个本地文件？" />
+                <option name="rating" value="UNRATED" />
+                <option name="referenceBeans">
+                  <list />
+                </option>
+                <option name="status" value="SUCCESS" />
+                <option name="totalToken" value="20159" />
+                <option name="variables">
+                  <list />
+                </option>
+              </Turn>
             </list>
           </option>
-          <option name="updateTime" value="1774487833613" />
+          <option name="updateTime" value="1774490655447" />
         </Conversation>
         <Conversation>
           <option name="createTime" value="1774443589692" />
