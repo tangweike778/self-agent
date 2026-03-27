@@ -2,7 +2,9 @@ package skill
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os/exec"
 	"runtime"
 	"self-agent/model"
@@ -10,8 +12,16 @@ import (
 	"time"
 )
 
-// ExecShellSkillDesc 执行shell命令
-func ExecShellSkillDesc() model.ToolDefinition {
+// ExecShellSkill 执行shell命令
+type ExecShellSkill struct{}
+
+// Name 获取技能名称
+func (e *ExecShellSkill) Name() string {
+	return "exec_shell"
+}
+
+// Description 获取技能描述
+func (e *ExecShellSkill) Description() model.ToolDefinition {
 	return model.ToolDefinition{
 		Type: "function",
 		Function: model.FunctionDefinition{
@@ -46,7 +56,7 @@ type ExecShellResult struct {
 
 // ExecShell 执行shell命令并返回结果
 // 设置超时时间防止命令长时间阻塞
-func ExecShell(command string, timeoutSeconds int) *ExecShellResult {
+func (e *ExecShellSkill) ExecShell(command string, timeoutSeconds int) *ExecShellResult {
 	result := &ExecShellResult{
 		Command: command,
 	}
@@ -118,4 +128,26 @@ func (r *ExecShellResult) FormatResult() string {
 		sb.WriteString(fmt.Sprintf("错误信息: %s\n", r.Error))
 	}
 	return sb.String()
+}
+
+// Execute 执行shell命令工具
+func (e *ExecShellSkill) Execute(argsJSON string) string {
+	var args struct {
+		Command string `json:"command"`
+		Timeout int    `json:"timeout"`
+	}
+	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
+		return fmt.Sprintf("解析工具参数失败: %v", err)
+	}
+
+	if args.Timeout <= 0 {
+		args.Timeout = 30
+	}
+	if args.Timeout > 120 {
+		args.Timeout = 120
+	}
+
+	log.Printf("执行shell命令: %s (超时: %ds)", args.Command, args.Timeout)
+	result := e.ExecShell(args.Command, args.Timeout)
+	return result.FormatResult()
 }

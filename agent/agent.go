@@ -19,29 +19,32 @@ import (
 
 // Agent AI代理
 type Agent struct {
-	APIKey    string
-	BaseURL   string
-	Tools     []model.ToolDefinition
-	Estimator *common.TokenEstimator
+	APIKey     string
+	BaseURL    string
+	Tools      []model.ToolDefinition
+	Estimator  *common.TokenEstimator
+	ToolByName map[string]skill.Skill
 }
 
 // NewAgent 创建新的Agent实例
 func NewAgent(apiKey string) *Agent {
 	a := &Agent{
-		APIKey:    apiKey,
-		BaseURL:   "https://api.deepseek.com/v1/chat/completions",
-		Estimator: &common.TokenEstimator{},
+		APIKey:     apiKey,
+		BaseURL:    "https://api.deepseek.com/v1/chat/completions",
+		Estimator:  &common.TokenEstimator{},
+		ToolByName: make(map[string]skill.Skill),
 	}
 	// 注册可用的工具
-	a.registerTools()
+	for _, tool := range skill.AllSkills() {
+		a.registerTool(tool)
+	}
 	return a
 }
 
-// registerTools 注册LLM可用的工具
-func (a *Agent) registerTools() {
-	a.Tools = []model.ToolDefinition{
-		skill.ExecShellSkillDesc(),
-	}
+// registerTool 注册工具
+func (a *Agent) registerTool(tool skill.Skill) {
+	a.Tools = append(a.Tools, tool.Description())
+	a.ToolByName[tool.Name()] = tool
 }
 
 // SingleAsk 向Deepseek API提问（单轮对话）
@@ -197,32 +200,8 @@ func (a *Agent) callAPI(messages []model.AgentMessage) (*model.AgentResponseWith
 
 // executeTool 根据工具调用请求执行对应的工具
 func (a *Agent) executeTool(toolCall model.ToolCall) string {
-	switch toolCall.Function.Name {
-	case "exec_shell":
-		return a.executeShellTool(toolCall.Function.Arguments)
-	default:
-		return fmt.Sprintf("未知工具: %s", toolCall.Function.Name)
+	if tool, ok := a.ToolByName[toolCall.Function.Name]; ok {
+		return tool.Execute(toolCall.Function.Arguments)
 	}
-}
-
-// executeShellTool 执行shell命令工具
-func (a *Agent) executeShellTool(argsJSON string) string {
-	var args struct {
-		Command string `json:"command"`
-		Timeout int    `json:"timeout"`
-	}
-	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
-		return fmt.Sprintf("解析工具参数失败: %v", err)
-	}
-
-	if args.Timeout <= 0 {
-		args.Timeout = 30
-	}
-	if args.Timeout > 120 {
-		args.Timeout = 120
-	}
-
-	log.Printf("执行shell命令: %s (超时: %ds)", args.Command, args.Timeout)
-	result := skill.ExecShell(args.Command, args.Timeout)
-	return result.FormatResult()
+	return fmt.Sprintf("未知工具: %s", toolCall.Function.Name)
 }
