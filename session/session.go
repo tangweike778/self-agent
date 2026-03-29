@@ -64,7 +64,12 @@ func (s *Session) SendToChannel(message string) error {
 	if s.Channel == nil {
 		return nil // 没有绑定渠道，静默返回
 	}
-	return s.Channel.SendMessage(message)
+	return s.Channel.SendMessage(tidyMessage(message))
+}
+
+// tidyMessage 清理消息(将<thought>包裹的消息屏蔽)
+func tidyMessage(message string) string {
+	return agent.ThoughtRegex.ReplaceAllString(message, "")
 }
 
 // HasChannel 检查会话是否绑定了渠道
