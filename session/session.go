@@ -81,9 +81,10 @@ func (s *Session) HasChannel() bool {
 func (s *Session) Start() {
 	for {
 		// 构建好会话上下文
+		userInput := s.Tasks.GetTask().Content
 		s.History = append(s.History, model.AgentMessage{
 			Role:    "user",
-			Content: s.Tasks.GetTask().Content,
+			Content: userInput,
 		})
 		handledMsgs, skipAsk := handleBeforeAsk(s.History)
 		// 发送给对应的Agent
@@ -91,23 +92,56 @@ func (s *Session) Start() {
 			s.History = handledMsgs
 			continue
 		}
-		handledMsgs, err := s.Agent.Ask(s.History)
+		// 策略路由判断
+		strategy := agent.SelectStrategy(s.Agent, userInput)
+		log.Printf("[Session] 策略判断: mode=%s, confidence=%.2f", strategy.Mode, strategy.Confidence)
+		var response string
+		var err error
+		switch {
+		case strategy.Confidence <= 0.5:
+			// 低置信度：双路径并行执行
+			response, err = agent.ExecuteDualPath(s.Agent, userInput, s.History)
+		case strategy.Mode == model.StrategyModePlanSolve:
+			// Plan-and-Solve 模式
+			plan, planErr := agent.GeneratePlan(s.Agent, userInput, s.History)
+			if planErr != nil {
+				err = planErr
+				break
+			}
+			progressFn := func(progress string) {
+				if s.HasChannel() {
+					_ = s.SendToChannel(progress)
+				}
+				log.Printf("[Plan-and-Solve] %s", progress)
+			}
+			response, err = agent.ExecutePlan(s.Agent, plan, s.History, progressFn)
+		default:
+			// ReAct 模式（默认）
+			handledMsgs, err = s.Agent.Ask(s.History)
+			if err == nil {
+				s.History = handledMsgs
+				response = getLastMsg(s.History)
+			}
+		}
 		if err != nil {
-			// 当Ask错误时，清空最近一次的User消息
 			s.History = rollbackUserMsg(s.History)
 			fmt.Println("Error:", err)
 			continue
 		}
-		s.History = handledMsgs
+		// 非 ReAct 模式需要手动将结果追加到历史
+		if strategy.Mode != model.StrategyModeReact || strategy.Confidence <= 0.5 {
+			s.History = append(s.History, model.AgentMessage{
+				Role:    "assistant",
+				Content: response,
+			})
+		}
 		// 将结果发送到绑定的渠道
-		// TODO：这里要是没有绑定的渠道就不应该给它创建session，或者默认渠道就是console
-		latestMsg := getLastMsg(s.History)
 		if s.HasChannel() {
-			if err := s.SendToChannel(latestMsg); err != nil {
+			if err := s.SendToChannel(response); err != nil {
 				fmt.Println("Send to channel error:", err)
 			}
 		}
-		fmt.Printf("Agent response: %s\n", latestMsg)
+		fmt.Printf("Agent response: %s\n", response)
 	}
 }
 
